@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Submit Blacklist Request</title>
+</head>
+<body>
+    <h1>Submit Blacklist Request</h1>
+    <form id="blacklistForm">
+        <label for="discord_user_id">Discord User ID:</label><br>
+        <input type="text" id="discord_user_id" name="discord_user_id" required><br><br>
+
+        <label for="display_name">Display Name:</label><br>
+        <input type="text" id="display_name" name="display_name" required><br><br>
+
+        <label for="minecraft_username">Minecraft Username (Optional):</label><br>
+        <input type="text" id="minecraft_username" name="minecraft_username"><br><br>
+
+        <label for="minecraft_uuid">Minecraft UUID (Optional):</label><br>
+        <input type="text" id="minecraft_uuid" name="minecraft_uuid"><br><br>
+
+        <label for="reason">Reason:</label><br>
+        <textarea id="reason" name="reason" required></textarea><br><br>
+
+        <button type="submit">Submit Blacklist Request</button>
+    </form>
+    <p id="loginStatus"></p>
+    <a id="loginLink" style="display:none;" href="http://localhost:5000/login">Login with Discord</a>
+
+    <script>
+        const API_URL = 'http://localhost:5000';
+        
+        // Function to submit blacklist request
+        async function submitBlacklistRequest(event) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const response = await fetch(`${API_URL}/website_blacklist`, {
+                method: 'POST',
+                body: formData
+            });
+            if (response.ok) {
+                alert('Blacklist request submitted successfully');
+            } else {
+                alert('Failed to submit blacklist request');
+            }
+        }
+        
+        // Add event listener to the form
+        document.getElementById('blacklistForm').addEventListener('submit', submitBlacklistRequest);
+        
+        // Function to check login status
+        async function checkLoginStatus() {
+            try {
+                const response = await fetch(`${API_URL}/check_login`, {
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.logged_in) {
+                        document.getElementById('loginStatus').textContent = `Logged in as: ${data.username}`;
+                        document.getElementById('loginLink').style.display = 'none';
+                    } else {
+                        document.getElementById('loginStatus').textContent = 'Not logged in';
+                        document.getElementById('loginLink').style.display = 'inline';
+                    }
+                } else {
+                    throw new Error('Failed to check login status');
+                }
+            } catch (error) {
+                console.error('Error checking login status:', error);
+                document.getElementById('loginStatus').textContent = 'Error checking login status';
+                document.getElementById('loginLink').style.display = 'inline';
+            }
+        }
+        
+        // Call checkLoginStatus when the page loads
+        window.onload = checkLoginStatus;
+    </script>
+</body>
+</html>

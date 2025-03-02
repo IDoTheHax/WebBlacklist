@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Blacklist Requests</title>
+</head>
+<body>
+    <h1>Blacklist Requests</h1>
+
+    {% if discord_username %}
+        <p>Logged in as: {{ discord_username }} | <a href="/logout">Logout</a></p>
+    {% else %}
+        <a href="/login">Login with Discord</a>
+    {% endif %}
+
+    <table>
+        <thead>
+            <tr>
+                <th>Discord User ID</th>
+                <th>Display Name</th>
+                <th>Minecraft Username</th>
+                <th>Minecraft UUID</th>
+                <th>Reason</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for req in requests %}
+            <tr>
+                <td>{{ req['discord_user_id'] }}</td>
+                <td>{{ req['display_name'] }}</td>
+                <td>{{ req['minecraft_username'] }}</td>
+                <td>{{ req['minecraft_uuid'] }}</td>
+                <td>{{ req['reason'] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
