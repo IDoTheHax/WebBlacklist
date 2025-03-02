@@ -3,12 +3,26 @@
 <head>
     <title>Blacklist Requests</title>
     <script>
+        let authId; // Store the auth_id globally
+    
         document.addEventListener('DOMContentLoaded', function() {
             fetch('http://localhost:5000/blacklist_requests', {
                 credentials: 'include'
             })
             .then(response => response.json())
             .then(data => {
+                authId = data.discord_id;
+                console.log("Complete response data:", data);  // Log the entire response
+                // Check if discord_id exists with a different name
+                const possibleIdFields = ["discord_id", "id", "auth_id", "user_id", "admin_id"];
+                for (const field of possibleIdFields) {
+                    if (data[field]) {
+                        console.log(`Found ID in field '${field}':`, data[field]);
+                        authId = data[field];
+                        break;
+                    }
+                }
+
                 const tbody = document.querySelector('tbody');
                 data.requests.forEach(req => {
                     const row = `
@@ -18,7 +32,11 @@
                             <td>${req.minecraft_username || ''}</td>
                             <td>${req.minecraft_uuid || ''}</td>
                             <td>${req.reason}</td>
-                            <td><button onclick="blacklistUser('${req.discord_user_id}', '${req.display_name}', '${req.reason}', '${req.minecraft_username || ''}', '${req.minecraft_uuid || ''}')">Blacklist</button></td>
+                            <td>${req.status || 'Pending'}</td>
+                            <td>
+                                <button onclick="confirmBlacklist('${req.discord_user_id}', '${req.display_name}', '${req.reason}', '${req.minecraft_username || ''}', '${req.minecraft_uuid || ''}')">Confirm Blacklist</button>
+                                <button onclick="denyBlacklist('${req.discord_user_id}', '${req.display_name}', '${req.reason}')">Deny Blacklist</button>
+                            </td>
                         </tr>
                     `;
                     tbody.innerHTML += row;
@@ -33,18 +51,39 @@
             })
             .catch(error => console.error('Error:', error));
         });
-
-        function blacklistUser(userId, displayName, reason, minecraftUsername, minecraftUuid) {
+    
+        function confirmBlacklist(userId, displayName, reason, minecraftUsername, minecraftUuid) {
             const data = {
+                auth_id: authId,
                 user_id: userId,
                 display_name: displayName,
                 reason: reason,
                 mc_info: {
                     username: minecraftUsername,
                     uuid: minecraftUuid
-                }
+                },
+                status: 'Accepted'
+            };
+            console.log('Sending data:', data);
+            updateBlacklist(data);
+        }
+    
+        function denyBlacklist(userId, displayName, reason) {
+            console.log("Denying blacklist for user:", userId, "Name:", displayName, "Reason:", reason);
+            
+            const data = {
+                auth_id: authId,
+                user_id: userId,
+                display_name: displayName,
+                reason: reason,
+                status: 'Denied'
             };
 
+            updateBlacklist(data);
+        }
+
+        function updateBlacklist(data) {
+            console.log("Sending data:", JSON.stringify(data)); // Add this line
             fetch('http://localhost:5000/blacklist', {
                 method: 'POST',
                 headers: {
@@ -56,15 +95,14 @@
             .then(response => response.json())
             .then(result => {
                 alert(result.message);
-                // Optionally, refresh the page or remove the row from the table
                 location.reload();
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Failed to blacklist user');
+                alert('Failed to update blacklist status');
             });
         }
-    </script>        
+    </script>          
 </head>
 <body>
     <h1>Blacklist Requests</h1>
@@ -79,6 +117,7 @@
                 <th>Minecraft Username</th>
                 <th>Minecraft UUID</th>
                 <th>Reason</th>
+                <th>Status</th>
                 <th>Action</th>
             </tr>
         </thead>
