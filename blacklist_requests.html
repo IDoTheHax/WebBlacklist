@@ -2,15 +2,74 @@
 <html>
 <head>
     <title>Blacklist Requests</title>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('http://localhost:5000/blacklist_requests', {
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(data => {
+                const tbody = document.querySelector('tbody');
+                data.requests.forEach(req => {
+                    const row = `
+                        <tr>
+                            <td>${req.discord_user_id}</td>
+                            <td>${req.display_name}</td>
+                            <td>${req.minecraft_username || ''}</td>
+                            <td>${req.minecraft_uuid || ''}</td>
+                            <td>${req.reason}</td>
+                            <td><button onclick="blacklistUser('${req.discord_user_id}', '${req.display_name}', '${req.reason}', '${req.minecraft_username || ''}', '${req.minecraft_uuid || ''}')">Blacklist</button></td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+                
+                const loginStatus = document.getElementById('loginStatus');
+                if (data.discord_username) {
+                    loginStatus.innerHTML = `Logged in as: ${data.discord_username} | <a href="/logout">Logout</a>`;
+                } else {
+                    loginStatus.innerHTML = `<a href="/login">Login with Discord</a>`;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        function blacklistUser(userId, displayName, reason, minecraftUsername, minecraftUuid) {
+            const data = {
+                user_id: userId,
+                display_name: displayName,
+                reason: reason,
+                mc_info: {
+                    username: minecraftUsername,
+                    uuid: minecraftUuid
+                }
+            };
+
+            fetch('http://localhost:5000/blacklist', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+                credentials: 'include'
+            })
+            .then(response => response.json())
+            .then(result => {
+                alert(result.message);
+                // Optionally, refresh the page or remove the row from the table
+                location.reload();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to blacklist user');
+            });
+        }
+    </script>        
 </head>
 <body>
     <h1>Blacklist Requests</h1>
 
-    {% if discord_username %}
-        <p>Logged in as: {{ discord_username }} | <a href="/logout">Logout</a></p>
-    {% else %}
-        <a href="/login">Login with Discord</a>
-    {% endif %}
+    <div id="loginStatus"></div>
 
     <table>
         <thead>
@@ -20,18 +79,11 @@
                 <th>Minecraft Username</th>
                 <th>Minecraft UUID</th>
                 <th>Reason</th>
+                <th>Action</th>
             </tr>
         </thead>
         <tbody>
-            {% for req in requests %}
-            <tr>
-                <td>{{ req['discord_user_id'] }}</td>
-                <td>{{ req['display_name'] }}</td>
-                <td>{{ req['minecraft_username'] }}</td>
-                <td>{{ req['minecraft_uuid'] }}</td>
-                <td>{{ req['reason'] }}</td>
-            </tr>
-            {% endfor %}
+            <!-- Data will be inserted here by JavaScript -->
         </tbody>
     </table>
 </body>
